@@ -1,0 +1,5 @@
+.venv
+.git
+trainer
+dataset
+.vscode
