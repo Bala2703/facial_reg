@@ -1,0 +1,56 @@
+	 <!DOCTYPE html>
+	 <html lang="en">
+	 
+	 <head>
+		 <meta charset="UTF-8">
+		 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		 <title>Video Stream</title>
+		 <style>
+			 body {
+				 display: flex;
+				 align-items: center;
+				 justify-content: center;
+				 height: 100vh;
+				 margin: 0;
+			 }
+	 
+			 .container {
+				 text-align: center;
+			 }
+	 
+			 img {
+				 width: 80%;
+				 height: auto;
+				 margin-top: 20px; /* Adjust margin as needed */
+			 }
+	 
+			 form {
+				 margin-bottom: 20px; /* Adjust margin as needed */
+			 }
+		 </style>
+	 </head>
+	 
+	 <body>
+		 <div class="container">
+			 <div class="row">
+				 <div class="col-lg-8 offset-lg-2">
+					 <form method="post" action="{{ url_for('tasks') }}">
+						 <input type="text" placeholder="Enter your name" name="name">
+						 <input type="text" placeholder="Enter dataset name" name="dataset_name">
+						 <input type="submit" value="Create_dataset" name="create" />
+					 </form>
+					 <img id="video_feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
+					 <ol style="font-family:courier;"></ol>
+				 </div>
+			 </div>
+			 <form method="post">
+			 <div class="row">
+                <input style="border-color: #03a9f4;" type="submit" value="Start" name="start_btn">
+            </div>
+		</form>
+		 </div>
+	 </body>
+	 
+	 </html>
+	 
+	 

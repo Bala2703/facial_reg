@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Stream</title>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        img {
+            width: 80%;
+            height: auto;
+            margin-top: 20px; /* Adjust margin as needed */
+        }
+
+        form {
+            margin-bottom: 20px; /* Adjust margin as needed */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2">
+                <img id="recon_feed" src="{{ url_for('recon_feed') }}" alt="Recon Feed">
+                <ol style="font-family:courier;"></ol>
+            </div>
+        </div>
+        <form method="post">
+        <div class="row">
+           <input style="border-color: #03a9f4;" type="submit" value="Stop" name="stop_btn">
+       </div>
+   </form>
+    </div>
+</body>
+
+</html>
+
