@@ -1,127 +1,17 @@
-# import pathlib
-# from flask import Flask, render_template, Response, request
-# import cv2
-# import os
-# import numpy as np
-# from threading import Event
-# import uuid
-
-# global grey, camera, dataset_name, stop_event
-# grey = 0
-# dataset_name = None  
-# stop_event = Event() 
-# camera = None 
-
-# try:
-#     directory = "dataset"
-#     os.makedirs(directory)
-
-# except OSError as error:
-#     pass
-
-# app = Flask(__name__, template_folder='./templates')
-
-# def gen_frames():
-#     global grey, camera, dataset_name, stop_event, dataset_uuid
-#     count = 0
-
-#     while not stop_event.is_set():
-#         success, frame = camera.read()
-
-#         if success and grey:  # Only process frames when grey is True
-#             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-#             path = str(pathlib.Path(__file__).parent.resolve()) + '/haarcascade_frontalface_default.xml'
-#             face_detector = cv2.CascadeClassifier(path)
-#             faces = face_detector.detectMultiScale(gray, 1.3, 5)
-#             for (x, y, w, h) in faces:
-#                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-
-#                 if dataset_name is not None:
-#                     # Adjust the path to include the dataset name
-#                     image_path = os.path.join("dataset", str(dataset_name), "User." + str(dataset_uuid) + "." + str(count)+".jpg")
-
-#                     # Save the image
-#                     success = cv2.imwrite(image_path, gray[y:y + h, x:x + w])
-#                     if success:
-#                         count += 1
-#                         print("Image saved successfully.")
-#                     else:
-#                         print("Failed to save image.")
-#                 else:
-#                     print("Dataset name is None. Handle this case according to your application logic.")
-
-#                 if count >= 50:
-#                     stop_event.set()  # Stop the loop
-
-#             try:
-#                 ret, buffer = cv2.imencode('.jpg', cv2.flip(frame, 1))
-#                 frame = buffer.tobytes()
-#                 yield (b'--frame\r\n'
-#                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-#             except Exception as e:
-#                 pass
-
-#         else:
-#             pass
-
-#     if camera.isOpened():
-#         camera.release()
-#     cv2.destroyAllWindows()
-
-# @app.route('/')
-# def index():
-#     return render_template('index.html')
-
-# @app.route('/video_feed')
-# def video_feed():
-#     global camera, grey
-#     if camera is None or not camera.isOpened():
-#         camera = cv2.VideoCapture(0)
-#     grey = 1
-#     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-# @app.route('/requests', methods=['POST', 'GET'])
-# def tasks():
-#     global grey, dataset_name, stop_event, dataset_uuid
-#     if request.method == 'POST':
-#         if request.form.get('create') == 'Create_dataset':
-#             dataset_name = request.form.get('dataset_name')
-
-#             if dataset_name and dataset_name.strip():
-#                 dataset_folder_path = os.path.join("dataset", dataset_name)
-#                 try:
-#                     os.makedirs(dataset_folder_path, exist_ok=True)
-#                     dataset_uuid = uuid.uuid1()
-#                     print(f"Dataset folder '{dataset_name}' created successfully.")
-#                     grey = not grey
-#                     stop_event.clear()  
-#                 except OSError as e:
-#                     print(f"Error creating dataset folder '{dataset_name}': {e}")
-#             else:
-#                 print("Dataset name is empty or contains only whitespace. Handle this case according to your application logic.")
-
-#     elif request.method == 'GET':
-#         return render_template('index.html')
-
-#     return render_template('index.html')
-
-# if __name__ == '__main__':
-#     app.run()
-
 import pathlib
 from flask import Flask, render_template, Response, request, redirect, url_for, flash
 import cv2
 import os
 import numpy as np
 import uuid
+import threading
 from threading import Event
 import firebase_admin
 from firebase_admin import credentials, db
 from PIL import Image
 import pyrebase
 from requests.exceptions import HTTPError
-
+from datetime import datetime
 config = {
   "apiKey": "AIzaSyAhnt3bVjfG7W_e8tmR7v2GcFLRTVBtDSE",
   "authDomain": "attendance-71cd0.firebaseapp.com",
@@ -205,10 +95,13 @@ def gen_frames():
     if camera.isOpened():
         camera.release()
 
+
+def mark_attendance_thread(name, status, date, time):
+    mark_attendance(name, status, date, time)
+
 def gen_recon_frames():
-    global camera
+    global camera, status
     db = firebase.database()
-    db.child("Students").child("Bala")
     recognizer.read('trainer/trainer.yml')
 
     cascadePath = str(pathlib.Path(__file__).parent.resolve()) + '/haarcascade_frontalface_default.xml'
@@ -239,7 +132,8 @@ def gen_recon_frames():
             id, confidence = recognizer.predict(gray[y:y + h, x:x + w])
 
             if confidence < 100:
-                id = names[id]
+                id = names[id+1]
+                status = "present"
                 confidence = "  {0}%".format(round(100 - confidence))
             else:
                 id = "unknown"
@@ -250,12 +144,43 @@ def gen_recon_frames():
         try:
             ret, buffer = cv2.imencode('.jpg', img)
             img = buffer.tobytes()
-            db.child("Students").child("Bala").update({"name": "Bala Kumar", "Status": "Present"})
+            now = datetime.now()
+            d_string = now.strftime("%d/%m/%Y")
+            t_string = now.strftime("%H:%M:%S")
+
+            threading.Thread(target=mark_attendance_thread, args=(id, status, d_string, t_string)).start()
+
             yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + img + b'\r\n')
 
         except Exception as e:
             pass
+
+
+def mark_attendance(name, status, date, time):
+    names_ref = db.reference('/folder_name_uuid_mapping')  
+    names_snapshot = names_ref.get()
+    
+    if names_snapshot:
+        # Check if the name exists in the dataset
+        if name in names_snapshot:
+            # Check if the name already has an attendance record
+            attendance_ref = db.reference('/attendance')
+            print(attendance_ref.get())
+            existing_records = attendance_ref.order_by_child('name').equal_to(name).get()
+            
+            if not existing_records:
+                # If no existing record, push the new attendance record
+                attendance_record = {'name': name, 'status': status, 'date': date, 'time': time}
+                attendance_ref.push().set(attendance_record)
+                print(f"Attendance marked for '{name}'")
+            else:
+                print(f"Attendance already marked for '{name}'")
+        else:
+            print(f"Name '{name}' not found in the dataset.")
+    else:
+        print("No names found in the dataset.")
+
 
 def store_mapping_in_firebase(folder_name, uuid):
     ref = db.reference('/folder_name_uuid_mapping')
