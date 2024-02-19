@@ -38,11 +38,11 @@ while True:
 
         id, confidence = recognizer.predict(gray[y:y + h, x:x + w])
 
-        if confidence < 60:
+        if confidence < 100:
             id = names[id]
             confidence = "  {0}%".format(round(100 - confidence))
         else:
-            id = "unknown"
+            # id = "unknown"
             confidence = "  {0}%".format(round(100 - confidence))
 
         cv2.putText(img, str(id), (x + 5, y - 5), font, 1, (255, 255, 255), 2)

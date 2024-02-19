@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #dateForm {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #attendanceTable {
+            width: 90%;
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+
+        #attendanceTable th,
+        #attendanceTable td {
+            border: 1px solid #dddddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #attendanceTable th {
+            background-color: #f2f2f2;
+        }
+
+        #attendanceTable tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        #attendanceTable tr:hover {
+            background-color: #ddd;
+        }
+
+        input[type="date"] {
+            padding: 6px 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 8px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        @media screen and (max-width: 600px) {
+            #attendanceTable {
+                width: 100%;
+            }
+
+            #attendanceTable td,
+            #attendanceTable th {
+                font-size: 14px;
+            }
+        }
+
+        .ts,
+        .tp {
+            margin-left: 10px;
+        }
+
+        #totalStudents,
+        #totalPresent {
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Student Attendance List</h1>
+
+    <div class="ts">Total Students: <span id="totalStudents">{{ t_p }}</span></div>
+    <div class="tp">Total Present: <span id="totalPresent">{{ t_s }}</span></div>
+    <br>
+
+    <form id="dateForm">
+        <label for="selectedDate">Select Date:</label>
+        <input type="date" id="selectedDate" name="selectedDate">
+        <button type="button" onclick="filterByDate()">Filter</button>
+    </form>
+
+    <table id="attendanceTable">
+        <tr>
+            <th>Name</th>
+            <th>Date</th>
+            <th>Time</th>
+        </tr>
+        {% for date, student_data in students.items() %}
+        {% for student, data in student_data.items() %}
+        <tr id="ro">
+            <td>{{ data['name'] }}</td>
+            <td>{{date}}</td>
+            <td>{{ data['time'] }}</td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+    </table>
+
+    <script>
+        function filterByDate() {
+            var selectedDate = document.getElementById('selectedDate').value;
+            var rows = document.querySelectorAll('#attendanceTable #ro');
+
+            rows.forEach(function (row) {
+                var dateCell = row.cells[1].textContent; 
+                if (dateCell !== selectedDate) {
+                    row.style.display = 'none'; 
+                } else {
+                    row.style.display = ''; 
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var today = new Date().toISOString().slice(0, 10); 
+            document.getElementById('selectedDate').value = today; 
+            filterByDate(); 
+        });
+    </script>
+
+</body>
+
+</html>

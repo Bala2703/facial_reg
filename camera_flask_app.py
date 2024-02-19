@@ -74,7 +74,7 @@ def gen_frames():
                     else:
                         print("Failed to save image.")
                 else:
-                    print("Dataset name is None. Handle this case according to your application logic.")
+                    print("Dataset name is None.")
 
                 if count >= 30:
                     stop_event.set()
@@ -114,7 +114,7 @@ def gen_recon_frames():
 
     dataset_path = 'dataset'
     names = [name for name in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, name))]
-    names.insert(0, 'None')
+    # names.insert(0, 'None')
     while True:
         ret, img = camera.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -128,13 +128,16 @@ def gen_recon_frames():
 
         for (x, y, w, h) in faces:
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
             id, confidence = recognizer.predict(gray[y:y + h, x:x + w])
-
-            if confidence < 100:
-                id = names[id+1]
+            if confidence < 80:
+                id = names[id]
                 status = "present"
                 confidence = "  {0}%".format(round(100 - confidence))
+                now = datetime.now()
+                date = now.strftime("%Y-%m-%d")
+                time = now.strftime("%H:%M:%S")
+                mark_attendance(id, status, date, time)
+
             else:
                 id = "unknown"
                 confidence = "  {0}%".format(round(100 - confidence))
@@ -144,12 +147,7 @@ def gen_recon_frames():
         try:
             ret, buffer = cv2.imencode('.jpg', img)
             img = buffer.tobytes()
-            now = datetime.now()
-            d_string = now.strftime("%d/%m/%Y")
-            t_string = now.strftime("%H:%M:%S")
-
-            threading.Thread(target=mark_attendance_thread, args=(id, status, d_string, t_string)).start()
-
+            # threading.Thread(target=mark_attendance_thread, args=(id, status, date, time)).start()
             yield (b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + img + b'\r\n')
 
@@ -158,33 +156,47 @@ def gen_recon_frames():
 
 
 def mark_attendance(name, status, date, time):
-    names_ref = db.reference('/folder_name_uuid_mapping')  
-    names_snapshot = names_ref.get()
-    
-    if names_snapshot:
-        # Check if the name exists in the dataset
-        if name in names_snapshot:
-            # Check if the name already has an attendance record
-            attendance_ref = db.reference('/attendance')
-            print(attendance_ref.get())
-            existing_records = attendance_ref.order_by_child('name').equal_to(name).get()
-            
-            if not existing_records:
-                # If no existing record, push the new attendance record
-                attendance_record = {'name': name, 'status': status, 'date': date, 'time': time}
-                attendance_ref.push().set(attendance_record)
-                print(f"Attendance marked for '{name}'")
-            else:
-                print(f"Attendance already marked for '{name}'")
+    attendance_path = f'/attendance/{date}/{name}'
+    attendance_ref = db.reference(attendance_path)
+    existing_record = attendance_ref.get()
+    now = datetime.now().weekday() 
+    # 0 = Monday  6 = Sunday
+    if now != 5:
+        if existing_record:
+            firebase_update=attendance_ref.update({'name':name,'time':time})
+
+    #         firebase_update = attendance_ref.update({'status': status, 'time': time})
+            if firebase_update:
+                print(f"Attendance updated for '{name}' on {date}.")
         else:
-            print(f"Name '{name}' not found in the dataset.")
+            attendance_ref.set({'time': time})
+            print(f"Attendance marked for '{name}' on {date}.")
     else:
-        print("No names found in the dataset.")
-
-
-def store_mapping_in_firebase(folder_name, uuid):
-    ref = db.reference('/folder_name_uuid_mapping')
-    ref.update({folder_name: uuid})
+        print("Unable to mark the Attendance")
+@app.route('/showlist')
+def showlist():
+    now = datetime.now()
+    date = now.strftime("%Y-%m-%d")
+    students_ref = db.reference(f'/attendance')
+    students_data = students_ref.get()
+    today_ref = db.reference(f'/attendance/{date}')
+    today_count = today_ref.get()
+    print(students_data)
+    if(students_data != None):
+        students_db_ref = db.reference(f'/student')
+        students_db_data = students_db_ref.get()
+        total_students=len(students_db_data)
+        total_present = len(today_count)
+        # print(students_data['balakumar']['name'])
+        return render_template('showlist.html', students=students_data,t_s=total_students,t_p=total_present)
+    else:
+        return render_template('showlist.html', error="data_not_found")
+def store_mapping_in_firebase(folder_name,uuid):
+    now = datetime.now()
+    date = now.strftime("%Y-%m-%d")
+    time = now.strftime("%H:%M:%S")
+    attendance_ref = db.reference(f'/student/{uuid}') 
+    attendance_ref.update({'name': folder_name})
 
 def train_face_recognizer():
     print("\n [INFO] Training faces. It will take a few seconds. Wait ...")
@@ -192,17 +204,10 @@ def train_face_recognizer():
     id_mapping = {uuid: i for i, uuid in enumerate(np.unique(ids))}
     int_ids = [id_mapping[uuid] for uuid in ids]
     int_ids = np.array(int_ids, dtype=np.int32)
-
     recognizer.train(faces, int_ids)
     recognizer.write(os.path.join(trainer_directory, 'trainer.yml'))
-    save_uuid_mapping_to_realtime_db(id_mapping)
     dataset_done = True
     print("\n [INFO] Face recognition model trained successfully.")
-
-def save_uuid_mapping_to_realtime_db(uuid_mapping):
-    string_uuid_mapping = {str(uuid): value for uuid, value in uuid_mapping.items()}
-    ref = db.reference('/uuid_folder_mapping')
-    ref.set(string_uuid_mapping)
 
 def get_images_and_labels(path):
     image_paths = []
@@ -294,14 +299,14 @@ def tasks():
                     print("Dataset name is empty or contains only whitespace. Handle this case according to your application logic.")
             elif request.form.get('start_btn'):
                 return redirect(url_for('recon_request'))
-
+            elif request.form.get('showlist'):
+                return redirect(url_for('showlist'))
         elif request.method == 'GET':
             return render_template('index.html')
-
         return render_template('index.html')
     
 
 if __name__ == '__main__':
-    app.secret_key = 'super secret key'
-    app.config['SESSION_TYPE'] = 'filesystem'
+    # app.secret_key = 'super secret key'
+    # app.config['SESSION_TYPE'] = 'filesystem'
     app.run(host="127.0.0.1",port=5000)
