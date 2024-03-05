@@ -23,27 +23,37 @@
         }
 
         #attendanceTable {
-            width: 90%;
-            margin: 0 auto;
+            margin-left: 20px;
+            width: 50%;
+            border-collapse: collapse;
+        }
+
+        #anotherTable {
+            width: 50%;
             border-collapse: collapse;
         }
 
         #attendanceTable th,
-        #attendanceTable td {
+        #attendanceTable td,
+        #anotherTable th,
+        #anotherTable td {
             border: 1px solid #dddddd;
             padding: 8px;
-            text-align: left;
+            text-align: center;
         }
 
-        #attendanceTable th {
+        #attendanceTable th,
+        #anotherTable th {
             background-color: #f2f2f2;
         }
 
-        #attendanceTable tr:nth-child(even) {
+        #attendanceTable tr:nth-child(even),
+        #anotherTable tr:nth-child(even) {
             background-color: #f2f2f2;
         }
 
-        #attendanceTable tr:hover {
+        #attendanceTable tr:hover,
+        #anotherTable tr:hover {
             background-color: #ddd;
         }
 
@@ -74,7 +84,9 @@
             }
 
             #attendanceTable td,
-            #attendanceTable th {
+            #attendanceTable th,
+            #anotherTable th,
+            #anotherTable td {
                 font-size: 14px;
             }
         }
@@ -90,14 +102,23 @@
             color: #4CAF50;
             margin-bottom: 10px;
         }
+
+        .table-container {
+            display: flex;
+        }
+
+        #attendanceTable,
+        #anotherTable {
+            margin-right: 20px;
+        }
     </style>
 </head>
 
 <body>
     <h1>Student Attendance List</h1>
 
-    <div class="ts">Total Students: <span id="totalStudents">{{ t_p }}</span></div>
-    <div class="tp">Total Present: <span id="totalPresent">{{ t_s }}</span></div>
+    <div class="ts">Total Students: <span id="totalStudents">{{ t_s }}</span></div>
+    <div class="tp">Total Present: <span id="totalPresent"></span></div>
     <br>
 
     <form id="dateForm">
@@ -106,44 +127,75 @@
         <button type="button" onclick="filterByDate()">Filter</button>
     </form>
 
-    <table id="attendanceTable">
-        <tr>
-            <th>Name</th>
-            <th>Date</th>
-            <th>Time</th>
-        </tr>
-        {% for date, student_data in students.items() %}
-        {% for student, data in student_data.items() %}
-        <tr id="ro">
-            <td>{{ data['name'] }}</td>
-            <td>{{date}}</td>
-            <td>{{ data['time'] }}</td>
-        </tr>
-        {% endfor %}
-        {% endfor %}
-    </table>
+    <div class="table-container">
+        <table id="attendanceTable">
+            <tr>
+                <th>Name</th>
+                <th>Date</th>
+                <th>Time</th>
+            </tr>
+            {% for date, student_data in students.items() %}
+            {% for student, data in student_data.items() %}
+            <tr class="ro">
+                <td>{{ data['name'] }}</td>
+                <td>{{date}}</td>
+                <td>{{ data['time'] }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </table>
+
+        <table id="anotherTable">
+            <tr>
+                <th>Name</th>
+                <th>Attendance Percentage</th>
+            </tr>
+            {% for student_id, student_data in liststudent.items() %}
+            <tr class="ro">
+                <td>{{ student_data.get('name', 'N/A') }}</td>
+                <td>
+                    {% set present_dates = [] %}
+                    {% for date, attendance_data in students.items() %}
+                    {% if student_data.get('name') in attendance_data %}
+                    {% set _ = present_dates.append(date) %}
+                    {% endif %}
+                    {% endfor %}
+                    {% set attendance_percentage = (present_dates | length / total_d * 100) | round(2) %}
+                    {{attendance_percentage}}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+
+
+
+    </div>
 
     <script>
         function filterByDate() {
             var selectedDate = document.getElementById('selectedDate').value;
-            var rows = document.querySelectorAll('#attendanceTable #ro');
-
+            var rows = document.querySelectorAll('#attendanceTable .ro');
+            var totalPresent = 0;
             rows.forEach(function (row) {
-                var dateCell = row.cells[1].textContent; 
+                var dateCell = row.cells[1].textContent;
                 if (dateCell !== selectedDate) {
-                    row.style.display = 'none'; 
+                    row.style.display = 'none';
                 } else {
-                    row.style.display = ''; 
+                    row.style.display = '';
+                    totalPresent++
                 }
             });
+            document.getElementById('totalPresent').textContent = totalPresent;
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            var today = new Date().toISOString().slice(0, 10); 
-            document.getElementById('selectedDate').value = today; 
-            filterByDate(); 
+            var today = new Date().toISOString().slice(0, 10);
+            document.getElementById('selectedDate').value = today;
+            filterByDate();
         });
     </script>
+
 
 </body>
 

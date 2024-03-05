@@ -129,7 +129,7 @@ def gen_recon_frames():
         for (x, y, w, h) in faces:
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
             id, confidence = recognizer.predict(gray[y:y + h, x:x + w])
-            if confidence < 80:
+            if confidence < 100:
                 id = names[id]
                 status = "present"
                 confidence = "  {0}%".format(round(100 - confidence))
@@ -179,16 +179,14 @@ def showlist():
     date = now.strftime("%Y-%m-%d")
     students_ref = db.reference(f'/attendance')
     students_data = students_ref.get()
-    today_ref = db.reference(f'/attendance/{date}')
-    today_count = today_ref.get()
     print(students_data)
     if(students_data != None):
         students_db_ref = db.reference(f'/student')
         students_db_data = students_db_ref.get()
         total_students=len(students_db_data)
-        total_present = len(today_count)
+        # total_present = len(today_count)
         # print(students_data['balakumar']['name'])
-        return render_template('showlist.html', students=students_data,t_s=total_students,t_p=total_present)
+        return render_template('showlist.html', students=students_data,t_s=total_students,liststudent=students_db_data, total_d=len(students_data))
     else:
         return render_template('showlist.html', error="data_not_found")
 def store_mapping_in_firebase(folder_name,uuid):
