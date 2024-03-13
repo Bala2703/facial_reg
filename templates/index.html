@@ -60,7 +60,6 @@
 		.input-group:after {
 			clear: both;
 		}
-
 	</style>
 </head>
 
@@ -70,8 +69,14 @@
 			<div class="col-lg-8 offset-lg-2">
 				<form method="post" action="{{ url_for('tasks') }}">
 					<div class="input-group input-group-icon">
-						<input type="text" placeholder="Enter dataset name" name="dataset_name">
-						<div class="input-icon"><i class="fa fa-envelope"></i></div>
+						<input type="text" placeholder="Enter dataset name" name="dataset_name" #required>
+						<div class="input-icon"><i class="fa fa-envelope"></i>
+						</div>
+					</div>
+					<div class="input-group input-group-icon">
+						<input type="text" placeholder="Enter Register Number" name="register_number" #required>
+						<div class="input-icon"><i class="fa fa-envelope"></i>
+						</div>
 					</div>
 					<div class="row">
 						<input type="submit" value="Create_dataset" name="create" />

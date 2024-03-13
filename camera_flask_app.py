@@ -22,9 +22,10 @@ config = {
 cred = credentials.Certificate("attendance-71cd0-firebase-adminsdk-s5fvg-679f8dc269.json")
 firebase_admin.initialize_app(cred, {'databaseURL': 'https://attendance-71cd0-default-rtdb.firebaseio.com/'})
 firebase = pyrebase.initialize_app(config)
-global grey, camera, dataset_name, stop_event, dataset_uuid, user, auth_done, dataset_done
+global grey, camera, dataset_name, stop_event, dataset_uuid, user, auth_done, dataset_done, reg_num
 grey = 0
 dataset_name = None
+reg_num = None
 stop_event = Event()
 dataset_uuid = None
 camera = None
@@ -49,7 +50,7 @@ cascadePath = str(pathlib.Path(__file__).parent.resolve()) + '/haarcascade_front
 detector = cv2.CascadeClassifier(cascadePath)
  
 def gen_frames():
-    global grey, camera, dataset_name, stop_event, dataset_uuid
+    global grey, camera, dataset_name, stop_event, dataset_uuid, reg_num
     count = 0
 
     while not stop_event.is_set():
@@ -70,7 +71,7 @@ def gen_frames():
                     if success:
                         count += 1
                         print("Image saved successfully.")
-                        store_mapping_in_firebase(str(dataset_name), str(dataset_uuid))
+                        store_mapping_in_firebase(str(dataset_name), str(dataset_uuid), str(reg_num))
                     else:
                         print("Failed to save image.")
                 else:
@@ -96,11 +97,8 @@ def gen_frames():
         camera.release()
 
 
-def mark_attendance_thread(name, status, date, time):
-    mark_attendance(name, status, date, time)
-
 def gen_recon_frames():
-    global camera, status
+    global camera, status, reg_num
     db = firebase.database()
     recognizer.read('trainer/trainer.yml')
 
@@ -136,7 +134,7 @@ def gen_recon_frames():
                 now = datetime.now()
                 date = now.strftime("%Y-%m-%d")
                 time = now.strftime("%H:%M:%S")
-                mark_attendance(id, status, date, time)
+                mark_attendance(id, status, date, time, reg_num)
 
             else:
                 id = "unknown"
@@ -155,7 +153,7 @@ def gen_recon_frames():
             pass
 
 
-def mark_attendance(name, status, date, time):
+def mark_attendance(name, status, date, time, reg_num):
     attendance_path = f'/attendance/{date}/{name}'
     attendance_ref = db.reference(attendance_path)
     existing_record = attendance_ref.get()
@@ -163,13 +161,13 @@ def mark_attendance(name, status, date, time):
     # 0 = Monday  6 = Sunday
     if now != 5:
         if existing_record:
-            firebase_update=attendance_ref.update({'name':name,'time':time})
+            firebase_update=attendance_ref.update({'name':name,'time':time, 'reg_num':reg_num})
 
     #         firebase_update = attendance_ref.update({'status': status, 'time': time})
             if firebase_update:
                 print(f"Attendance updated for '{name}' on {date}.")
         else:
-            attendance_ref.set({'time': time})
+            attendance_ref.set({'time': time, 'reg_num':reg_num})
             print(f"Attendance marked for '{name}' on {date}.")
     else:
         print("Unable to mark the Attendance")
@@ -183,18 +181,19 @@ def showlist():
     if(students_data != None):
         students_db_ref = db.reference(f'/student')
         students_db_data = students_db_ref.get()
+        print(students_db_data)
         total_students=len(students_db_data)
         # total_present = len(today_count)
         # print(students_data['balakumar']['name'])
         return render_template('showlist.html', students=students_data,t_s=total_students,liststudent=students_db_data, total_d=len(students_data))
     else:
         return render_template('showlist.html', error="data_not_found")
-def store_mapping_in_firebase(folder_name,uuid):
+def store_mapping_in_firebase(folder_name,uuid,reg_num):
     now = datetime.now()
     date = now.strftime("%Y-%m-%d")
     time = now.strftime("%H:%M:%S")
     attendance_ref = db.reference(f'/student/{uuid}') 
-    attendance_ref.update({'name': folder_name})
+    attendance_ref.update({'name': folder_name, 'reg_num': reg_num})
 
 def train_face_recognizer():
     print("\n [INFO] Training faces. It will take a few seconds. Wait ...")
@@ -277,12 +276,12 @@ def recon_request():
 
 @app.route('/requests', methods=['POST', 'GET'])
 def tasks():
-    global grey, dataset_name, stop_event, dataset_uuid, camera
+    global grey, dataset_name, stop_event, dataset_uuid, camera, reg_num
     if auth_done == True:
         if request.method == 'POST':
             if request.form.get('create') == 'Create_dataset':
                 dataset_name = request.form.get('dataset_name')
-
+                reg_num = request.form.get('register_number')
                 if dataset_name and dataset_name.strip():
                     dataset_uuid = uuid.uuid1()
                     dataset_folder_path = os.path.join("dataset", dataset_name)

@@ -123,24 +123,30 @@
 
     <form id="dateForm">
         <label for="selectedDate">Select Date:</label>
-        <input type="date" id="selectedDate" name="selectedDate">
-        <button type="button" onclick="filterByDate()">Filter</button>
+        <input type="date" id="selectedDate" name="selectedDate" onchange="filterByDate()">
     </form>
 
     <div class="table-container">
         <table id="attendanceTable">
             <tr>
                 <th>Name</th>
+                <th>R.No</th>
                 <th>Date</th>
                 <th>Time</th>
             </tr>
             {% for date, student_data in students.items() %}
             {% for student, data in student_data.items() %}
+            {% for reg_num, name in liststudent.items() %}
+            {% if data['name'] == name.get('name') %}
+
             <tr class="ro">
                 <td>{{ data['name'] }}</td>
+                <td>{{ name.get('reg_num') }}</td>
                 <td>{{date}}</td>
                 <td>{{ data['time'] }}</td>
             </tr>
+            {% endif %}
+            {% endfor %}
             {% endfor %}
             {% endfor %}
         </table>
@@ -148,11 +154,13 @@
         <table id="anotherTable">
             <tr>
                 <th>Name</th>
+                <th>R.No</th>
                 <th>Attendance Percentage</th>
             </tr>
             {% for student_id, student_data in liststudent.items() %}
             <tr class="ro">
                 <td>{{ student_data.get('name', 'N/A') }}</td>
+                <td>{{student_data.get('reg_num', 'N/A')}}</td>
                 <td>
                     {% set present_dates = [] %}
                     {% for date, attendance_data in students.items() %}
@@ -166,10 +174,6 @@
             </tr>
             {% endfor %}
         </table>
-
-
-
-
     </div>
 
     <script>
@@ -177,17 +181,26 @@
             var selectedDate = document.getElementById('selectedDate').value;
             var rows = document.querySelectorAll('#attendanceTable .ro');
             var totalPresent = 0;
+
             rows.forEach(function (row) {
-                var dateCell = row.cells[1].textContent;
-                if (dateCell !== selectedDate) {
-                    row.style.display = 'none';
-                } else {
+                var cells = row.getElementsByTagName("td");
+                var dateCellIndex = -1;
+                for (var i = 0; i < cells.length; i++) {
+                    if (cells[i].textContent === selectedDate) {
+                        dateCellIndex = i;
+                        break;
+                    }
+                }
+                if (dateCellIndex !== -1) {
                     row.style.display = '';
-                    totalPresent++
+                    totalPresent++;
+                } else {
+                    row.style.display = 'none';
                 }
             });
             document.getElementById('totalPresent').textContent = totalPresent;
         }
+
 
         document.addEventListener('DOMContentLoaded', function () {
             var today = new Date().toISOString().slice(0, 10);
