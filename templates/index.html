@@ -2,100 +2,108 @@
 <html lang="en">
 
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Attendance System</title>
-	<style>
-		body {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			height: 100vh;
-			margin: 0;
-		}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance System</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
 
-		.container {
-			text-align: center;
-		}
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            overflow-x: auto;
+        }
 
-		img {
-			width: 100%;
-			height: auto;
-			margin-top: 20px;
-		}
+        img {
+            width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
 
-		form {
-			margin-bottom: 20px;
-		}
+        form {
+            margin-bottom: 20px;
+        }
 
-		input,
-		input[type="radio"]+label,
-		input[type="checkbox"]+label:before,
-		select option,
-		select {
-			width: 100%;
-			padding: 1em;
-			line-height: 1.4;
+        input{
+            width: 100%;
+            padding: 1em;
+            line-height: 1.4;
 			background-color: #f9f9f9;
-			border: 1px solid #e5e5e5;
-			border-radius: 3px;
-			-webkit-transition: 0.35s ease-in-out;
-			-moz-transition: 0.35s ease-in-out;
-			-o-transition: 0.35s ease-in-out;
-			transition: 0.35s ease-in-out;
-			transition: all 0.35s ease-in-out;
-		}
+            border: 1px solid #e5e5e5;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
 
-		.input-group {
-			margin-bottom: 1em;
-			zoom: 1;
-		}
+        input[type="submit"]:hover {
+            background-color: #0288d1;
+        }
 
-		.input-group:before,
-		.input-group:after {
-			content: "";
-			display: table;
-		}
+        .row {
+            display: flex;
+            justify-content: center;
+        }
 
-		.input-group:after {
-			clear: both;
-		}
-	</style>
+        .col-lg-8 {
+            flex: 0 0 66.666667%;
+            max-width: 66.666667%;
+            padding: 0 15px;
+        }
+
+        @media only screen and (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .col-lg-8 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+
+            img {
+                margin-top: 10px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-	<div class="container">
-		<div class="row">
-			<div class="col-lg-8 offset-lg-2">
-				<form method="post" action="{{ url_for('tasks') }}">
-					<div class="input-group input-group-icon">
-						<input type="text" placeholder="Enter dataset name" name="dataset_name" #required>
-						<div class="input-icon"><i class="fa fa-envelope"></i>
-						</div>
-					</div>
-					<div class="input-group input-group-icon">
-						<input type="text" placeholder="Enter Register Number" name="register_number" #required>
-						<div class="input-icon"><i class="fa fa-envelope"></i>
-						</div>
-					</div>
-					<div class="row">
-						<input type="submit" value="Create_dataset" name="create" />
-					</div>
-				</form>
-				<img id="video_feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
-				<ol style="font-family:courier;"></ol>
-			</div>
-		</div>
-		<form method="post">
-			<div class="row">
-				<input style="border-color: #03a9f4;" type="submit" value="Enter_Attendance" name="start_btn">
-			</div>
-			<br>
-			<div class="row">
-				<input style="border-color: #03a9f4;" type="submit" value="showlist" name="showlist">
-			</div>
-		</form>
-	</div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <form method="post" action="{{ url_for('tasks') }}">
+                    <div class="input-group input-group-icon">
+                        <input type="text" placeholder="Enter dataset name" name="dataset_name" required>
+                        <div class="input-icon"><i class="fa fa-envelope"></i>
+                        </div>
+                    </div>
+                    <div class="input-group input-group-icon">
+                        <input type="text" placeholder="Enter Register Number" name="register_number" required>
+                        <div class="input-icon"><i class="fa fa-envelope"></i>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <input type="submit" value="Create_dataset" name="create" />
+                    </div>
+                </form>
+                <img id="video_feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
+                <ol style="font-family:courier;"></ol>
+            </div>
+        </div>
+        <form method="post">
+            <div class="row">
+                <input style="border-color: #03a9f4;" type="submit" value="Enter_Attendance" name="start_btn">
+            </div>
+            <br>
+            <div class="row">
+                <input style="border-color: #03a9f4;" type="submit" value="showlist" name="showlist">
+            </div>
+        </form>
+    </div>
 </body>
 
 </html>
